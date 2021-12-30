@@ -262,7 +262,7 @@ bot.run(TOKEN)
 
 '''
 Todo: 
-- add the "owner" of each vc to the list and only allow for them to use the edit.
+- add a role to override the "owner" so that staff can also use the editname command
 - add a command to change the amount of people allowed in the vc
 - add a general edit command for changing both the name and the amount
 - look into potentially adding a multi-role add with *args
