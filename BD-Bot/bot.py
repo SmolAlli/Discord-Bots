@@ -3,11 +3,6 @@ Bot for VC Joins - Creates a new VC and moves the user to it whenever someone jo
 This VC will be "temporary" - it will only exist while there is at least 1 user in it.
 The VC will be deleted whenever the last person joins.
 
-- Watch for the join in a VC
-- Creates a new VC
-- Ask for the user to name the VC (and give a default w/ default message) - e.g. "type in "default" to keep current VC name"
-- Watch for leave of VC, and when nobody is in there, yeet the VC
-
 I also decided to add role reaction for the shits and gigs of it.
 '''
 
@@ -255,3 +250,11 @@ async def on_error(event, *args, **kwargs):
             raise
 
 bot.run(TOKEN)
+
+'''
+Todo: 
+- add the "owner" of each vc to the list and only allow for them to use the edit.
+- add a command to change the amount of people allowed in the vc
+- add a general edit command for changing both the name and the amount
+- look into potentially adding a multi-role add with *args
+'''
