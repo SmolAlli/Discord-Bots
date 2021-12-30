@@ -155,7 +155,7 @@ async def on_raw_reaction_remove(payload):
 # 
 
 primary_chats = [842990290788155423, 925940962658750494]
-secondary_chats = []
+secondary_chats = {}
 bot_channel = 838943565887045672
 
 @bot.group(pass_context=True, invoke_without_command=True, aliases=["voice", "tempvoice", "tvc"])
@@ -164,13 +164,22 @@ async def vc():
 
 @vc.command(name="editname")
 async def vc_edit_name(ctx, *name):
-    new_name = ""
-    for i in name:
-        new_name += i + " "
-    channel = ctx.author.voice.channel
-    channel_name = channel.name
-    await channel.edit(name=new_name)
-    await ctx.send(f"Changed VC Channel '{channel_name}' to '{channel.name}'")
+    try:
+        channel = ctx.author.voice.channel
+    except AttributeError as e:
+        await ctx.send("You are not in a temporary voice channel. Please create one using the main channel.")
+        return
+
+    if (channel.id in secondary_chats.keys()) and (ctx.author.id in secondary_chats.values()):
+        new_name = ""
+        for i in name:
+            new_name += i + " "
+        
+        channel_name = channel.name
+        await channel.edit(name=new_name)
+        await ctx.send(f"Changed VC Channel '{channel_name}' to '{channel.name}'")
+    else:
+        await ctx.send("You do not have permission to use this command. You are not the channel's owner.")
 
 @bot.event
 async def on_voice_state_update(member, before, after):
@@ -181,7 +190,7 @@ async def on_voice_state_update(member, before, after):
         # Ignore mute/unmute events
         return
 
-    print(member, before, after)
+    # print(member, before, after)
 
     # On channel join
     try:
@@ -192,27 +201,27 @@ async def on_voice_state_update(member, before, after):
             vc = await after.channel.guild.create_voice_channel(name=f"{member.display_name}'s VC", bitrate=64000, user_limit=0, category=category)
             await member.move_to(vc)
 
-            channel = bot.get_channel(bot_channel)
-            await channel.send(f"{member.mention}, to change your VC's name, type bd!vc editname <new name>\nIt is recommended that you rename the channel to the game you're going to host/play.")
-            secondary_chats.append(vc.id)
+            # channel = bot.get_channel(bot_channel)
+            # await channel.send(f"{member.mention}, to change your VC's name, type bd!vc editname <new name>\nIt is recommended that you rename the channel to the game you're going to host/play.")
+            secondary_chats[vc.id] = member.id
             return
     except AttributeError as e:
-        print(e)
+        pass # print(e)
 
     # On channel leave
     try:
         if (before.channel.id in secondary_chats) and (len(before.channel.members) < 1):
         # delete the channel that is before.channel.id
-            secondary_chats.remove(before.channel.id)
+            secondary_chats.pop(before.channel.id)
 
             vc = before.channel
             await vc.delete(reason="Empty Temporary VC")
 
-            channel = bot.get_channel(bot_channel)
-            await channel.send("Session ended.")
+            # channel = bot.get_channel(bot_channel)
+            # await channel.send("Session ended.")
             return
     except AttributeError as e:
-        print(e)
+        pass # print(e)
 
 # 
 #   Help command
