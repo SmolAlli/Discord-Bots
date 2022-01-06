@@ -54,11 +54,6 @@ async def reaction(ctx):
     if ctx.invoked_subcommand is None:
         await ctx.send('Reaction roles.\nPlease type bd!help rr for more information')
 
-@reaction.error
-async def reaction_error(ctx, error):
-    if isinstance(error, commands.MissingPermissions):
-        await ctx.send("You do not have permission to use that command.")
-
 # Role reaction command
 @reaction.command(name="add")
 @commands.has_permissions(manage_messages=True)
@@ -84,10 +79,10 @@ async def reaction_add(ctx, messageID: int, emoji, role):
     except Exception as e:
         print(f"Exception: {e}")
 
-@reaction_add.error
-async def reaction_add_error(ctx, error):
-    if isinstance(error, commands.MissingPermissions):
-        await ctx.send("You do not have permission to use that command.")
+# @reaction_add.error
+# async def reaction_add_error(ctx, error):
+#     if isinstance(error, commands.MissingPermissions):
+#         await ctx.send("You do not have permission to use that command.")
 
 @reaction.command(name="massadd", aliases = ["addmany", "madd"])
 @commands.has_permissions(manage_messages=True)
@@ -125,10 +120,10 @@ async def reaction_massadd(ctx, messageID: int, *bulk):
     except Exception as e:
         print(f"Exception: {e}")
 
-@reaction_massadd.error
-async def reaction_massadd_error(ctx, error):
-    if isinstance(error, commands.MissingPermissions):
-        await ctx.send("You do not have permission to use that command.")
+# @reaction_massadd.error
+# async def reaction_massadd_error(ctx, error):
+#     if isinstance(error, commands.MissingPermissions):
+#         await ctx.send("You do not have permission to use that command.")
 
 # Role reaction deletion command
 @reaction.command(name="del")
@@ -150,10 +145,10 @@ async def reaction_del(ctx, messageID: int, emoji):
     except Exception as e:
         print(f"Exception: {e}")
 
-@reaction_del.error
-async def reaction_del_error(ctx, error):
-    if isinstance(error, commands.MissingPermissions):
-        await ctx.send("You do not have permission to use that command.")
+# @reaction_del.error
+# async def reaction_del_error(ctx, error):
+#     if isinstance(error, commands.MissingPermissions):
+#         await ctx.send("You do not have permission to use that command.")
 
 # Role reaction removal
 @reaction.command(name="clear")
@@ -176,10 +171,10 @@ async def reaction_clear(ctx, messageID):
     except Exception as e:
         print(f"Exception: {e}")
 
-@reaction_clear.error
-async def reaction_clear_error(ctx, error):
-    if isinstance(error, commands.MissingPermissions):
-        await ctx.send("You do not have permission to use that command.")
+# @reaction_clear.error
+# async def reaction_clear_error(ctx, error):
+#     if isinstance(error, commands.MissingPermissions):
+#         await ctx.send("You do not have permission to use that command.")
 
 # Checkers for role reactions
 # Check reaction add
@@ -404,10 +399,17 @@ async def on_error(event, *args, **kwargs):
         else:
             raise
 
+@bot.event
+async def on_command_error(ctx, error):
+    if isinstance(error, commands.MissingPermissions) or isinstance(error, commands.MissingRole):
+        await ctx.send("You do not have permission to use that command.")
+    else:
+        raise error
+
+
 bot.run(TOKEN)
 
 '''
 Todo: 
-- rr needs a role/perms for usage
 - try to re-write with Go
 '''
