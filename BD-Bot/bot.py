@@ -7,17 +7,15 @@ I also decided to add role reaction for the shits and gigs of it.
 '''
 
 import os
-
 import discord
-import random
 from dotenv import load_dotenv
+override = 925204549281665077
 
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
 GUILD = os.getenv('DISCORD_GUILD')
 
 from discord.ext import commands
-from discord.utils import get
 
 # Important for being able to get the 
 intents = discord.Intents.default()
@@ -50,12 +48,19 @@ role_reactions = {}
 
 # Main group for role reactions.
 @bot.group(pass_context=True, invoke_without_command=True, aliases=["rr", "rroles"])
+@commands.has_permissions(manage_messages=True)
 async def reaction(ctx):
     if ctx.invoked_subcommand is None:
         await ctx.send('Reaction roles.\nPlease type bd!help rr for more information')
 
+@reaction.error
+async def reaction_error(ctx, error):
+    if isinstance(error, commands.MissingPermissions):
+        await ctx.send("You do not have permission to use that command.")
+
 # Role reaction command
 @reaction.command(name="add")
+@commands.has_permissions(manage_messages=True)
 async def reaction_add(ctx, messageID: int, emoji, role):  
     try:
         # Fetches the message using its ID
@@ -78,38 +83,55 @@ async def reaction_add(ctx, messageID: int, emoji, role):
     except Exception as e:
         print(f"Exception: {e}")
 
-# @reaction.command(name="massadd")
-# async def reaction_add(ctx, messageID, *bulk):
-#     try:
-#         # Fetches the message using its ID
-#         message = await ctx.fetch_message(messageID)
+@reaction_add.error
+async def reaction_add_error(ctx, error):
+    if isinstance(error, commands.MissingPermissions):
+        await ctx.send("You do not have permission to use that command.")
 
-#         current_role = ""
-#         for _bulk in bulk:
-#             if type(_bulk) is discord.Emoji:
-#                 print("emoji")
-#             else:
-#                 print("not emoji")
+@reaction.command(name="massadd", aliases = ["addmany", "madd"])
+@commands.has_permissions(manage_messages=True)
+async def reaction_massadd(ctx, messageID: int, *bulk):
+    try:
+        # Fetches the message using its ID
+        message = await ctx.fetch_message(messageID)
 
-#         # Adds the reaction to the message + reaction message
-#         # await discord.Message.add_reaction(message, emoji)
-#         # await ctx.send(f"Added reaction {emoji} to message {messageID}")
+        for_embed = {}
+        for emoji, role in zip(bulk[0::2], bulk[1::2]):
+            # Adds the reaction to the message + reaction message
+            await discord.Message.add_reaction(message, emoji)
 
-#         # # Removes unnecessary parts from ID and changes it to a role object
-#         # stripped_role = role.replace("<@&", "")
-#         # stripped_role = stripped_role.replace(">", "")
-#         # role_obj = ctx.guild.get_role(int(stripped_role))
+            # Removes unnecessary parts from ID and changes it to a role object
+            stripped_role = role.replace("<@&", "")
+            stripped_role = stripped_role.replace(">", "")
+            role_obj = ctx.guild.get_role(int(stripped_role))
 
-#         # # Adds reaction info to dict
-#         # role_reactions[f"{messageID}, {emoji}"] = role_obj
+            # Adds reaction info to dict
+            role_reactions[f"{messageID}, {emoji}"] = role_obj
+            for_embed[f"{emoji}"] = role_obj
+        string = ""
+        for emoji, role in for_embed.items():
+            string += f"{emoji} {role}\n"
+        help_embed_dict = {
+            "title": "Mass Reaction Roles Added",
+            "type": "rich",
+            "color": 0x3F83E6,
+            "description": string
+        }
+        help_embed = discord.Embed.from_dict(help_embed_dict)
+        await ctx.send(embed=help_embed)
+    except discord.HTTPException: # Error when emoji is not valid or message ID is not valid
+        await ctx.send("There was an error adding the reaction. Please make sure that the Message's ID is valid, and that the emoji specified is global or from this server.\nFor help: bd!help rr")
+    except Exception as e:
+        print(f"Exception: {e}")
 
-#     except discord.HTTPException: # Error when emoji is not valid or message ID is not valid
-#         await ctx.send("There was an error adding the reaction. Please make sure that the Message's ID is valid, and that the emoji specified is global or from this server.\nFor help: bd!help rr")
-#     except Exception as e:
-#         print(f"Exception: {e}")
+@reaction_massadd.error
+async def reaction_massadd_error(ctx, error):
+    if isinstance(error, commands.MissingPermissions):
+        await ctx.send("You do not have permission to use that command.")
 
 # Role reaction deletion command
 @reaction.command(name="del")
+@commands.has_permissions(manage_messages=True)
 async def reaction_del(ctx, messageID: int, emoji):  
     try:
         # Fetches the message using its ID
@@ -127,8 +149,14 @@ async def reaction_del(ctx, messageID: int, emoji):
     except Exception as e:
         print(f"Exception: {e}")
 
+@reaction_del.error
+async def reaction_del_error(ctx, error):
+    if isinstance(error, commands.MissingPermissions):
+        await ctx.send("You do not have permission to use that command.")
+
 # Role reaction removal
 @reaction.command(name="clear")
+@commands.has_permissions(manage_messages=True)
 async def reaction_clear(ctx, messageID):  
     try:
         # Fetches the message using its ID
@@ -146,6 +174,11 @@ async def reaction_clear(ctx, messageID):
         await ctx.send("There was an error removing the reactions. Please make sure that the Message's ID is valid.\nFor help: bd!help rrclear")
     except Exception as e:
         print(f"Exception: {e}")
+
+@reaction_clear.error
+async def reaction_clear_error(ctx, error):
+    if isinstance(error, commands.MissingPermissions):
+        await ctx.send("You do not have permission to use that command.")
 
 # Checkers for role reactions
 # Check reaction add
@@ -194,7 +227,7 @@ bot_channel = 838943565887045672
 async def vc():
     pass
 
-@vc.command(name="editname")
+@vc.command(name="name")
 async def vc_edit_name(ctx, *name):
     try:
         channel = ctx.author.voice.channel
@@ -204,7 +237,7 @@ async def vc_edit_name(ctx, *name):
         
         channel_name = channel.name
 
-        override_role = discord.utils.get(ctx.author.guild.roles, id=925204549281665077)
+        override_role = discord.utils.get(ctx.author.guild.roles, id=override)
 
     except AttributeError as e:
         await ctx.send("You are not in a temporary voice channel. Please create one using the main channel.")
@@ -216,20 +249,21 @@ async def vc_edit_name(ctx, *name):
     else:
         await ctx.send("You do not have permission to use this command.")
 
-@vc.command(name="editlimit")
+@vc.command(name="limit")
 async def vc_edit_limit(ctx, limit: int):
     try:
         channel = ctx.author.voice.channel
         channel_limit = channel.limit
-        override_role = discord.utils.get(ctx.author.guild.roles, id=925204549281665077)
+        override_role = discord.utils.get(ctx.author.guild.roles, id=override)
         lim = "No limit" if channel_limit == 0 else channel_limit
-    except AttributeError as e:
+    except AttributeError:
         await ctx.send("You are not in a temporary voice channel. Please create one using the main channel.")
         return
         
     if (channel.id in secondary_chats.keys()) and (override_role in ctx.author.roles) or (channel.id in secondary_chats.keys()) and (ctx.author.id in secondary_chats.values()):
         await channel.edit(limit=limit)
-        await ctx.send(f"Limit changed from {lim} to {channel.limit}")
+        lim2 = "No limit" if channel.limit == 0 else channel.limit
+        await ctx.send(f"Limit changed from {lim} to {lim2}")
     else:
         await ctx.send("You do not have permission to use this command.")
 
@@ -244,7 +278,7 @@ async def vc_edit(ctx, limit: int, *name):
         channel_name = channel.name
         channel_limit = channel.limit
         lim = "No limit" if channel_limit == 0 else channel_limit
-        override_role = discord.utils.get(ctx.author.guild.roles, id=925204549281665077)
+        override_role = discord.utils.get(ctx.author.guild.roles, id=override)
 
     except AttributeError as e:
         await ctx.send("You are not in a temporary voice channel. Please create one using the main channel.")
@@ -252,7 +286,8 @@ async def vc_edit(ctx, limit: int, *name):
     
     if (channel.id in secondary_chats.keys()) and (override_role in ctx.author.roles) or (channel.id in secondary_chats.keys()) and (ctx.author.id in secondary_chats.values()):
         await channel.edit(name=new_name, limit=limit)
-        await ctx.send(f"Changed VC Channel '{channel_name}' to '{channel.name}' and Limit changed from {lim} to {channel.limit}")
+        lim2 = "No limit" if channel.limit == 0 else channel.limit
+        await ctx.send(f"Changed VC Channel '{channel_name}' to '{channel.name}' and Limit changed from {lim} to {lim2}")
     else:
         await ctx.send("You do not have permission to use this command.")
 
@@ -264,8 +299,6 @@ async def on_voice_state_update(member, before, after):
     if before.channel == after.channel:
         # Ignore mute/unmute events
         return
-
-    # print(member, before, after)
 
     # On channel join
     try:
@@ -302,28 +335,65 @@ async def on_voice_state_update(member, before, after):
 #   HELP COMMAND
 # 
 
-@bot.command(name="help")
+@bot.group(name="help", pass_context=True, invoke_without_command=True)
 async def help(ctx):
     help_embed_dict = {
         "title": "Help Commands",
         "type": "rich",
-        "description": "help embed",
         "color": 0x3F83E6,
-        "footer": {"text": "help"},
         "thumbnail": {"url": "https://cdn.discordapp.com/avatars/925239835130732566/e43c858a5cf0e33894fc742a31e222f7.png?size=4096"},
         "fields": [
-        {"name": "Role Reactions (rr | rroles | reaction)", 
-        "value": 
-            "**Add** - bd!rr add <message ID> <emoji> <role>\nCreates a reaction role.\n" +
-            "**Remove** - bd!rr del <message ID> <emoji>\nDeletes a reaction role.\n" +
-            "**Clear** - bd!rr clear <message ID>\nRemoves all reaction roles on a given message."}, 
-        {"name": "Temp Voice Chats", 
-        "value": "TBD"}]
+            {"name": "Role Reactions (rr | rroles | reaction)", 
+            "value": "Adds reactions to a message, so users can add self-roles."}, 
+            {"name": "Temporary Voice Chats (vc | voice | tempvoice | tvc)", 
+            "value": "Allows for temporary voice chats to be created, so that they can exist as is needed."}]
     }
 
     help_embed = discord.Embed.from_dict(help_embed_dict)
     await ctx.send(embed=help_embed)
 
+@help.command(name="rr", aliases=["rroles", "reaction"])
+async def help_rr(ctx):
+    help_embed_dict = {
+        "title": "Help Commands - Role Reactions (rr | rroles | reaction)",
+        "type": "rich",
+        "color": 0x3F83E6,
+        "thumbnail": {"url": "https://cdn.discordapp.com/avatars/925239835130732566/e43c858a5cf0e33894fc742a31e222f7.png?size=4096"},
+        "fields": 
+            [{"name": "bd!rr add <message ID> <emoji> <role>", 
+            "value": "Creates a reaction role.\nThe role must be either the @role or the ID."}, 
+            {"name": "bd!rr massadd <message ID> <bulk>",
+            "value": "Adds a mass of reactions.\nThe bulk must be <emoji> <role>, where the role is either the @role or the ID."},
+            {"name": "bd!rr del <message ID> <emoji>", 
+            "value": "Deletes a reaction role."}, 
+            {"name": "bd!rr clear <message ID>", 
+            "value": "Removes all reaction roles on a given message."}]
+    }
+
+    help_embed = discord.Embed.from_dict(help_embed_dict)
+    await ctx.send(embed=help_embed)
+
+@help.command(name="vc", aliases=[""])
+async def help_vc(ctx):
+    help_embed_dict = {
+        "title": "Help Commands - Temporary Voice Chats (vc | voice | tempvoice | tvc)",
+        "type": "rich",
+        "color": 0x3F83E6,
+        "thumbnail": {"url": "https://cdn.discordapp.com/avatars/925239835130732566/e43c858a5cf0e33894fc742a31e222f7.png?size=4096"},
+        "fields": [
+        {"name": "Join the main VC", 
+        "value": "Join the main VC and the bot will create a temporary VC for you"},
+        {"name": "bd!vc name <name>", 
+        "value": "Changes the name to be whatever you choose. Only works if you created the VC\nCan have spaces."},
+        {"name": "bd!vc limit <limit>", 
+        "value": "Changes the vc's person limit to be whatever you choose. Only works if you created the VC\nMust be a number."},
+        {"name": "bd!vc edit <limit> <name>", 
+        "value": "Edits both the name and the person limit to be whatever you choose. Only works if you created the VC\nThe name can have spaces.\nThe limit must be a number."}
+        ]
+    }
+
+    help_embed = discord.Embed.from_dict(help_embed_dict)
+    await ctx.send(embed=help_embed)
 # Shits and gigs
 @bot.event
 async def on_error(event, *args, **kwargs):
@@ -337,6 +407,6 @@ bot.run(TOKEN)
 
 '''
 Todo: 
-- look into potentially adding a multi-role add with *args
+- rr needs a role/perms for usage
 - try to re-write with Go
 '''
