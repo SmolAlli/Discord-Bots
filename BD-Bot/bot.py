@@ -9,11 +9,12 @@ I also decided to add role reaction for the shits and gigs of it.
 import os
 import discord
 from dotenv import load_dotenv
-override = 925204549281665077
+
 
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
 GUILD = os.getenv('DISCORD_GUILD')
+OVERRIDE = os.getenv('DISCORD_OVERRIDE_ROLE')
 
 from discord.ext import commands
 
@@ -237,7 +238,7 @@ async def vc_edit_name(ctx, *name):
         
         channel_name = channel.name
 
-        override_role = discord.utils.get(ctx.author.guild.roles, id=override)
+        override_role = discord.utils.get(ctx.author.guild.roles, id=OVERRIDE)
 
     except AttributeError as e:
         await ctx.send("You are not in a temporary voice channel. Please create one using the main channel.")
@@ -254,7 +255,7 @@ async def vc_edit_limit(ctx, limit: int):
     try:
         channel = ctx.author.voice.channel
         channel_limit = channel.limit
-        override_role = discord.utils.get(ctx.author.guild.roles, id=override)
+        override_role = discord.utils.get(ctx.author.guild.roles, id=OVERRIDE)
         lim = "No limit" if channel_limit == 0 else channel_limit
     except AttributeError:
         await ctx.send("You are not in a temporary voice channel. Please create one using the main channel.")
@@ -278,7 +279,7 @@ async def vc_edit(ctx, limit: int, *name):
         channel_name = channel.name
         channel_limit = channel.limit
         lim = "No limit" if channel_limit == 0 else channel_limit
-        override_role = discord.utils.get(ctx.author.guild.roles, id=override)
+        override_role = discord.utils.get(ctx.author.guild.roles, id=OVERRIDE)
 
     except AttributeError as e:
         await ctx.send("You are not in a temporary voice channel. Please create one using the main channel.")
