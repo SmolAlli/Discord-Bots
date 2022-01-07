@@ -10,15 +10,15 @@ import os
 import discord
 from dotenv import load_dotenv
 
-
+# Gets external variables for use
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
-GUILD = os.getenv('DISCORD_GUILD')
 OVERRIDE = os.getenv('DISCORD_OVERRIDE_ROLE')
+PRIMARY_VC = os.getenv('DISCORD_VC')
 
 from discord.ext import commands
 
-# Important for being able to get the 
+# Important for being able to get messages and members.
 intents = discord.Intents.default()
 intents.members = True
 intents.messages = True
@@ -27,19 +27,6 @@ bot = commands.Bot(command_prefix = commands.when_mentioned_or('bd!'), intents=i
 @bot.event
 async def on_ready():
     print(f'{bot.user} has connected to Discord!')
-
-    for guild in bot.guilds:
-        if guild.name == GUILD:
-            break
-
-    print(
-        f'{bot.user} is connected to the following guild:\n'
-        f'{guild.name} (id: {guild.id})'
-    )
-
-    # Uncomment this and change the image.png to be whatever the new profile picture should be for the bot. Not necessary otherwise
-    # with open('image.png', 'rb') as image:
-    #     await bot.user.edit(avatar=image.read())
 
 # 
 #   ROLE REACTIONS
@@ -54,7 +41,7 @@ async def reaction(ctx):
     if ctx.invoked_subcommand is None:
         await ctx.send('Reaction roles.\nPlease type bd!help rr for more information')
 
-# Role reaction command
+# Role reaction add command
 @reaction.command(name="add")
 @commands.has_permissions(manage_messages=True)
 async def reaction_add(ctx, messageID: int, emoji, role):  
@@ -78,11 +65,6 @@ async def reaction_add(ctx, messageID: int, emoji, role):
         await ctx.send("There was an error adding the reaction. Please make sure that the Message's ID is valid, and that the emoji specified is global or from this server.\nFor help: bd!help rr")
     except Exception as e:
         print(f"Exception: {e}")
-
-# @reaction_add.error
-# async def reaction_add_error(ctx, error):
-#     if isinstance(error, commands.MissingPermissions):
-#         await ctx.send("You do not have permission to use that command.")
 
 @reaction.command(name="massadd", aliases = ["addmany", "madd"])
 @commands.has_permissions(manage_messages=True)
@@ -120,11 +102,6 @@ async def reaction_massadd(ctx, messageID: int, *bulk):
     except Exception as e:
         print(f"Exception: {e}")
 
-# @reaction_massadd.error
-# async def reaction_massadd_error(ctx, error):
-#     if isinstance(error, commands.MissingPermissions):
-#         await ctx.send("You do not have permission to use that command.")
-
 # Role reaction deletion command
 @reaction.command(name="del")
 @commands.has_permissions(manage_messages=True)
@@ -145,11 +122,6 @@ async def reaction_del(ctx, messageID: int, emoji):
     except Exception as e:
         print(f"Exception: {e}")
 
-# @reaction_del.error
-# async def reaction_del_error(ctx, error):
-#     if isinstance(error, commands.MissingPermissions):
-#         await ctx.send("You do not have permission to use that command.")
-
 # Role reaction removal
 @reaction.command(name="clear")
 @commands.has_permissions(manage_messages=True)
@@ -162,6 +134,7 @@ async def reaction_clear(ctx, messageID):
         await discord.Message.clear_reactions(message)
         await ctx.send(f"Removed all reactions from message {messageID}")
 
+        # Looks through each reaction added to the dictionary and removes them if they match which message has been cleared.
         for key, value in role_reactions:
             if key.contains(f"{messageID}"):
                 role_reactions.pop(key)
@@ -171,13 +144,9 @@ async def reaction_clear(ctx, messageID):
     except Exception as e:
         print(f"Exception: {e}")
 
-# @reaction_clear.error
-# async def reaction_clear_error(ctx, error):
-#     if isinstance(error, commands.MissingPermissions):
-#         await ctx.send("You do not have permission to use that command.")
+# Event checks for role reactions
 
-# Checkers for role reactions
-# Check reaction add
+# Checks reaction add
 @bot.event
 async def on_raw_reaction_add(payload):
     if payload.user_id == bot.user.id:
@@ -186,12 +155,12 @@ async def on_raw_reaction_add(payload):
         return  # Reaction is on a private message
     guild = bot.get_guild(payload.guild_id)
     member = guild.get_member(payload.user_id)
+
+    # Checks if reaction is a role reaction
     if f"{payload.message_id}, {payload.emoji.name}" in role_reactions:
         role = role_reactions[f"{payload.message_id}, {payload.emoji.name}"]
         await member.add_roles(role, reason="Role reaction add")
-        # print("role addded!")
     else:
-        # print("did not pass check.")
         pass
 
 # Checks reaction remove
@@ -203,21 +172,19 @@ async def on_raw_reaction_remove(payload):
         return  # Reaction is on a private message
     guild = bot.get_guild(payload.guild_id)
     member = guild.get_member(payload.user_id)
+
+    # Checks if reaction is a role reaction
     if f"{payload.message_id}, {payload.emoji.name}" in role_reactions:
         role = role_reactions[f"{payload.message_id}, {payload.emoji.name}"]
         await member.remove_roles(role, reason="Role reaction remove")
-        # print("role removed!")
     else:
-        # print("did not pass check.")
         pass
 
 # 
 #   TEMPORARY VOICE CHANNELS
 # 
 
-primary_chats = [842990290788155423, 925940962658750494]
-secondary_chats = {}
-bot_channel = 838943565887045672
+secondary_vcs = {}
 
 @bot.group(pass_context=True, invoke_without_command=True, aliases=["voice", "tempvoice", "tvc"])
 async def vc():
@@ -226,7 +193,10 @@ async def vc():
 @vc.command(name="name")
 async def vc_edit_name(ctx, *name):
     try:
+        # Gets the current channel of the person who did the command
         channel = ctx.author.voice.channel
+
+        # Gets the name to give the VC from the *args
         new_name = ""
         for i in name:
             new_name += i + " "
@@ -235,11 +205,13 @@ async def vc_edit_name(ctx, *name):
 
         override_role = discord.utils.get(ctx.author.guild.roles, id=OVERRIDE)
 
-    except AttributeError as e:
+    # Doesn't work if the person isn't in a VC currently
+    except AttributeError:
         await ctx.send("You are not in a temporary voice channel. Please create one using the main channel.")
         return
     
-    if (channel.id in secondary_chats.keys()) and (override_role in ctx.author.roles) or (channel.id in secondary_chats.keys()) and (ctx.author.id in secondary_chats.values()):
+    # Checks if the person is allowed to change the name of the VC
+    if (channel.id in secondary_vcs.keys()) and (override_role in ctx.author.roles) or (channel.id in secondary_vcs.keys()) and (ctx.author.id in secondary_vcs.values()):
         await channel.edit(name=new_name)
         await ctx.send(f"Changed VC Channel '{channel_name}' to '{channel.name}'")
     else:
@@ -248,15 +220,19 @@ async def vc_edit_name(ctx, *name):
 @vc.command(name="limit")
 async def vc_edit_limit(ctx, limit: int):
     try:
+        # Gets the current channel and some information about the channel
         channel = ctx.author.voice.channel
         channel_limit = channel.limit
         override_role = discord.utils.get(ctx.author.guild.roles, id=OVERRIDE)
         lim = "No limit" if channel_limit == 0 else channel_limit
+
+    # Doesn't work if the person isn't in a VC currently
     except AttributeError:
         await ctx.send("You are not in a temporary voice channel. Please create one using the main channel.")
         return
-        
-    if (channel.id in secondary_chats.keys()) and (override_role in ctx.author.roles) or (channel.id in secondary_chats.keys()) and (ctx.author.id in secondary_chats.values()):
+    
+    # Checks if the person is allowed to change the limit of the VC
+    if (channel.id in secondary_vcs.keys()) and (override_role in ctx.author.roles) or (channel.id in secondary_vcs.keys()) and (ctx.author.id in secondary_vcs.values()):
         await channel.edit(limit=limit)
         lim2 = "No limit" if channel.limit == 0 else channel.limit
         await ctx.send(f"Limit changed from {lim} to {lim2}")
@@ -266,7 +242,10 @@ async def vc_edit_limit(ctx, limit: int):
 @vc.command(name="edit")
 async def vc_edit(ctx, limit: int, *name):
     try:
+        # Gets the name of the channel
         channel = ctx.author.voice.channel
+
+        # Gets all the information needed to change the name and to change the limit
         new_name = ""
         for i in name:
             new_name += i + " "
@@ -276,11 +255,13 @@ async def vc_edit(ctx, limit: int, *name):
         lim = "No limit" if channel_limit == 0 else channel_limit
         override_role = discord.utils.get(ctx.author.guild.roles, id=OVERRIDE)
 
+    # Doesn't work if the person isn't in a VC currently
     except AttributeError as e:
         await ctx.send("You are not in a temporary voice channel. Please create one using the main channel.")
         return
     
-    if (channel.id in secondary_chats.keys()) and (override_role in ctx.author.roles) or (channel.id in secondary_chats.keys()) and (ctx.author.id in secondary_chats.values()):
+    # Checks if the person has permission to use the command.
+    if (channel.id in secondary_vcs.keys()) and (override_role in ctx.author.roles) or (channel.id in secondary_vcs.keys()) and (ctx.author.id in secondary_vcs.values()):
         await channel.edit(name=new_name, limit=limit)
         lim2 = "No limit" if channel.limit == 0 else channel.limit
         await ctx.send(f"Changed VC Channel '{channel_name}' to '{channel.name}' and Limit changed from {lim} to {lim2}")
@@ -298,34 +279,30 @@ async def on_voice_state_update(member, before, after):
 
     # On channel join
     try:
-        if after.channel.id in primary_chats:
+        if after.channel.id in PRIMARY_VC:
             # create vc and move person to it
             
             category = after.channel.category
             vc = await after.channel.guild.create_voice_channel(name=f"{member.display_name}'s VC", bitrate=64000, user_limit=0, category=category)
             await member.move_to(vc)
 
-            # channel = bot.get_channel(bot_channel)
-            # await channel.send(f"{member.mention}, to change your VC's name, type bd!vc editname <new name>\nIt is recommended that you rename the channel to the game you're going to host/play.")
-            secondary_chats[vc.id] = member.id
+            secondary_vcs[vc.id] = member.id
             return
-    except AttributeError as e:
-        pass # print(e)
+    except AttributeError:
+        pass
 
     # On channel leave
     try:
-        if (before.channel.id in secondary_chats) and (len(before.channel.members) < 1):
+        if (before.channel.id in secondary_vcs) and (len(before.channel.members) < 1):
         # delete the channel that is before.channel.id
-            secondary_chats.pop(before.channel.id)
+            secondary_vcs.pop(before.channel.id)
 
             vc = before.channel
             await vc.delete(reason="Empty Temporary VC")
 
-            # channel = bot.get_channel(bot_channel)
-            # await channel.send("Session ended.")
             return
-    except AttributeError as e:
-        pass # print(e)
+    except AttributeError:
+        pass 
 
 # 
 #   HELP COMMAND
@@ -369,7 +346,7 @@ async def help_rr(ctx):
     help_embed = discord.Embed.from_dict(help_embed_dict)
     await ctx.send(embed=help_embed)
 
-@help.command(name="vc", aliases=[""])
+@help.command(name="vc", aliases=["voice", "tempvoice", "tvc"])
 async def help_vc(ctx):
     help_embed_dict = {
         "title": "Help Commands - Temporary Voice Chats (vc | voice | tempvoice | tvc)",
@@ -408,8 +385,3 @@ async def on_command_error(ctx, error):
 
 
 bot.run(TOKEN)
-
-'''
-Todo: 
-- try to re-write with Go
-'''
