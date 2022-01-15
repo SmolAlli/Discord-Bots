@@ -1,0 +1,1 @@
+// Removes all reactions from a message

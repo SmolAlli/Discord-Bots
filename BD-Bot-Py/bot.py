@@ -287,7 +287,6 @@ async def on_voice_state_update(member, before, after):
             await member.move_to(vc)
 
             secondary_vcs[vc.id] = member.id
-            return
     except AttributeError:
         pass
 

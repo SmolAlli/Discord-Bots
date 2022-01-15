@@ -1,2 +1,5 @@
-BD-Bot/.env
-BD-Bot Go/.env
+.env
+node_modules
+target
+*.json
+*.js
