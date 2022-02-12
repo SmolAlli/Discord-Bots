@@ -8,4 +8,4 @@ I originally made it in Python.
 
 They have role reactions and temporary VC capabilities
 
-*at the time, the JS bot is incomplete*
+I hope that the JS bot works.
