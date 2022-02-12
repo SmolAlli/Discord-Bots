@@ -1,42 +1,40 @@
-const { REST } = require("@discordjs/rest");
-const { Routes } = require("discord-api-types/v9");
-const fs = require("fs");
+const { REST } = require('@discordjs/rest');
+const { Routes } = require('discord-api-types/v9');
+const fs = require('fs');
 
-// Place your client and guild ids here
-const clientId = "925239835130732566";
-const guildId = "614075292918480896";
+const clientId = '925239835130732566';
+const guildId = '614075292918480896';
 
 module.exports = (client) => {
-  client.handleCommands = async (commandFolders, path) => {
-    client.commandArray = [];
-    for (folder of commandFolders) {
-      const commandFiles = fs
-        .readdirSync(`${path}/${folder}`)
-        .filter((file) => file.endsWith(".js"));
+	client.handleCommands = async (commandFolders, path) => {
+		client.commandArray = [];
+		for (folder of commandFolders) {
+			const commandFiles = fs
+				.readdirSync(`${path}/${folder}`)
+				.filter((file) => file.endsWith('.js'));
 
-      for (const file of commandFiles) {
-        const command = require(`.${path}/${folder}/${file}`);
-        // Set a new item in the Collection
-        // With the key as the command name and the value as the exported module
-        client.commands.set(command.data.name, command);
-        client.commandArray.push(command.data.toJSON());
-      }
-    }
+			for (const file of commandFiles) {
+				const command = require(`.${path}/${folder}/${file}`);
 
-    const rest = new REST({ version: "9" }).setToken(process.env.token);
+				client.commands.set(command.data.name, command);
+				client.commandArray.push(command.data.toJSON());
+			}
+		}
 
-    (async () => {
-      try {
-        console.log("Started refreshing application (/) commands.");
+		const rest = new REST({ version: '9' }).setToken(process.env.token);
 
-        await rest.put(Routes.applicationGuildCommands(clientId, guildId), {
-          body: client.commandArray,
-        });
+		(async () => {
+			try {
+				console.log('Started refreshing application (/) commands.');
 
-        console.log("Successfully reloaded application (/) commands.");
-      } catch (error) {
-        console.error(error);
-      }
-    })();
-  };
+				await rest.put(Routes.applicationGuildCommands(clientId, guildId), {
+					body: client.commandArray,
+				});
+
+				console.log('Successfully reloaded application (/) commands.');
+			} catch (error) {
+				console.error(error);
+			}
+		})();
+	};
 };
