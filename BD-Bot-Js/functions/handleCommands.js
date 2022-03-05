@@ -1,9 +1,9 @@
 const { REST } = require('@discordjs/rest');
 const { Routes } = require('discord-api-types/v9');
 const fs = require('fs');
+require('dotenv').config();
 
-const clientId = '925239835130732566';
-const guildId = '614075292918480896';
+const clientId = process.env.clientid;
 
 module.exports = (client) => {
 	client.handleCommands = async (commandFolders, path) => {
@@ -27,7 +27,7 @@ module.exports = (client) => {
 			try {
 				console.log('Started refreshing application (/) commands.');
 
-				await rest.put(Routes.applicationGuildCommands(clientId, guildId), {
+				await rest.put(Routes.applicationCommands(clientId), {
 					body: client.commandArray,
 				});
 
