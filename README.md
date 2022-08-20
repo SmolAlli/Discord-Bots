@@ -1,11 +1,21 @@
-# Discord-Bots
+# BetterDiscord Bot
 
-I made some bots.
+A bot I created for the gaming server for BetterDiscord (it may or may not exist ;) )
 
-They're essentially the same, just one written in Python and the other written in Javascript.
+## Installation
 
-I originally made it in Python.
+-   Clone the repo: `git clone https://github.com/SmolAlli/Discord-Bots`
 
-They have role reactions and temporary VC capabilities
+-   Change directories to be in it: `cd Discord-Bots`
 
-I hope that the JS bot works.
+-   Set up a .env file with the following options:
+
+    -   token (bot token)
+    -   dbToken (token for your mongodb database. if you want to support something else, gl changing the code :^) )
+    -   clientid (the bot's id. right click in the member list and click "copy id" with developer mode enabled in settings -> advanced)
+
+-   Install node modules `npm i`
+
+-   Start the bot: `npm run dev`
+
+-   Run a command with your bot using the slash commands.
